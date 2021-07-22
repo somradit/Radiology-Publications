@@ -130,8 +130,10 @@ function create_radiology_publication() { ?>
 	
 	jQuery(document).ready( function($){
 		var i = 1;
+		var j = 1;
 		function get_paper_details(author, paperid){
 		jQuery.getJSON("https://api.semanticscholar.org/v1/paper/"+paperid,function( paperdetail ) {
+			console.log(pub.paperId);
 			console.log(paperdetail);
 			console.log(paperdetail.authors.length);
 			authorList = new Array;
@@ -162,30 +164,32 @@ function create_radiology_publication() { ?>
 			
 		});
 	}
-		$( "#target2" ).click(function() {
-			
-			facultyIDs2.forEach(function(author){
-				if (!(author == null || author == 'null')){
-				console.log(author);
+	function get_author(author){
+		jQuery.getJSON("https://api.semanticscholar.org/v1/author/"+author,function( data2 ) {
+			console.log(author);
+			var pubs = data2["papers"];
+			jQuery.each(pubs, function(index, pub){
 				
-				jQuery.getJSON("https://api.semanticscholar.org/v1/author/"+author,function( data2 ) {
-					var pubs = data2["papers"];
-					console.log(pubs);
-					jQuery.each(pubs, function(index, pub){
-						
-							console.log(pub.paperId);
-						if(pub.year == '2021'  || pub.year == '2020'){
-							setTimeout(function() { get_paper_details(author, pub.paperId) }, i*5000);
-							i++;
-						}
-						
-						});
-						
-					});
+				
+				if(pub.year == '2021'  || pub.year == '2020'){
+					
+					setTimeout(function() { get_paper_details(author, pub.paperId) }, i*5000);
+					i++;
+				}
+				
+				});
+				
+			});
+	}
+		$( "#target2" ).click(function() {
+		
+			facultyIDs2.forEach(function(author){
+				if (author){
+					setTimeout(function() {get_author(author)}, j*5000)
+					j++;
 				};
 				
 				});
-		setTimeout(function() {console.log("done.")}, i*5000)
 		});
 	});
 					
@@ -288,9 +292,9 @@ function list_rad_publications_person( $atts ){
 	
 	if( $the_query->have_posts() ):
 	$out .= "<h3 style='margin-bottom:0px'>Recent Publications (via Semantic Scholar)</h3>";
-	$out .= "<a href='https://www.semanticscholar.org/author/".get_field('semantic_scholar_author_id')."'>See full author profile on Semantic Scholar</a></br></br>";
+	$out .= "<a href='https://www.semanticscholar.org/author/".get_field('semantic_scholar_author_id')."?utm_source=api'><img style='height:50px!important' src='/wp-content/plugins/Radiology-Publications/semantic_scholar.svg'></a></br></br>";
 		while( $the_query->have_posts() ) : $the_query->the_post();
-			$out .= '<a target="_blank" href="https://semanticscholar.org/paper/'. get_field('paperid') .'">'.get_the_title()."</a>";
+			$out .= '<a target="_blank" href="https://semanticscholar.org/paper/'. get_field('paperid') .'?utm_source=api">'.get_the_title()."</a>";
 			$out .= "<br>";
 			$out .= get_field( 'authors' );
 			if (get_field( 'publication_date' )){
@@ -344,18 +348,18 @@ function get_radiology_section_publications($atts){
 	   'posts_per_page' => 20,
 		'meta_query'	=> 	array(
 		'relation' => 'AND',
-		'author_clause' => array(
+		array(
 			'key'		=> 'uwauthors',
 			'value'		=> $section_faculty,
 			'compare'	=> 'IN'
 		),
-		'date_clause' => array(
+		array(
 			'key' 		=> 'publication_date',
 			'compare'	=> 'EXISTS'
 			)),
-		'orderby' => array(
-			'date_clause' => 'DESC',
-		),
+		'meta_key' => 'publication_date',
+		'orderby' => 'meta_value',
+		'order' => 'DESC'
       ));
 	  	$pubs = "";
 		$pubs .= '<h3 style="margin-bottom:0px">Recent '.$sc['section'].' Publications</h3>';
@@ -365,7 +369,7 @@ function get_radiology_section_publications($atts){
 	$paperid = get_field('paperid', $the_post->ID);
 	//If the paper has not already been added to the display add it now
 	if( ! in_array($paperid, $unique_papers)){
-			$pubs .= '<a target="_blank" href="https://semanticscholar.org/paper/'. get_field('paperid') .'">'.get_the_title()."</a>";
+			$pubs .= '<a target="_blank" href="https://semanticscholar.org/paper/'. get_field('paperid') .'?utm_source=api">'.get_the_title()."</a>";
 			$pubs .= "<br>";
 			$pubs .= get_field( 'authors' );
 			if (get_field( 'publication_date' )){
@@ -382,8 +386,6 @@ function get_radiology_section_publications($atts){
 	};
 		
 		endwhile;
-		$pubs .= $sc['section'];
-		$pubs .= $section_faculty[1];
 		echo $pubs;
 	wp_reset_query();
 
