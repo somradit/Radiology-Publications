@@ -132,37 +132,36 @@ function create_radiology_publication() { ?>
 		var i = 1;
 		var j = 1;
 		function get_paper_details(author, paperid){
-		jQuery.getJSON("https://api.semanticscholar.org/v1/paper/"+paperid,function( paperdetail ) {
-			console.log(pub.paperId);
-			console.log(paperdetail);
-			console.log(paperdetail.authors.length);
-			authorList = new Array;
-			jQuery.each(paperdetail.authors, function(index, authors){
-					authorList.push(authors.name);
+			jQuery.getJSON("https://api.semanticscholar.org/v1/paper/"+paperid,function( paperdetail ) {
+				console.log(paperdetail);
+				console.log(paperdetail.authors.length);
+				authorList = new Array;
+				jQuery.each(paperdetail.authors, function(index, authors){
+						authorList.push(authors.name);
+				});
+				if(paperdetail.authors.length > 3){
+					shortauthorlist = authorList.slice(0,3);
+					shortauthorlist.push(" et al.");
+					authorList = shortauthorlist;
+				}
+				authorNamesString = authorList.join(', ');
+				console.log(authorNamesString);
+				
+				jQuery.ajax({
+					method: "POST",
+					url: ajaxurl,
+					async: false,
+					data: { 'action': 'dobsondev_ajax_tester_approal_action', 'title': paperdetail.title, 'abstract': paperdetail.abstract, 'paperId': paperdetail.paperId, 'author': author, 'source': paperdetail.venue.toUpperCase(), 'date': paperdetail.year, 'authorNamesString': authorNamesString}
+				})
+				.done(function( data ) {
+					console.log('Successful AJAX Call! /// Return Data: ' + data);
+					data = JSON.parse( data );
+				})
+				.fail(function( data ) {
+					console.log('Failed AJAX Call :( /// Return Data: ' + data);
+				});
+				
 			});
-			if(paperdetail.authors.length > 3){
-				shortauthorlist = authorList.slice(0,3);
-				shortauthorlist.push(" et al.");
-				authorList = shortauthorlist;
-			}
-			authorNamesString = authorList.join(', ');
-			console.log(authorNamesString);
-			
-			jQuery.ajax({
-				method: "POST",
-				url: ajaxurl,
-				async: false,
-				data: { 'action': 'dobsondev_ajax_tester_approal_action', 'title': paperdetail.title, 'abstract': paperdetail.abstract, 'paperId': paperdetail.paperId, 'author': author, 'source': paperdetail.venue.toUpperCase(), 'date': paperdetail.year, 'authorNamesString': authorNamesString}
-			})
-			.done(function( data ) {
-				console.log('Successful AJAX Call! /// Return Data: ' + data);
-				data = JSON.parse( data );
-			})
-			.fail(function( data ) {
-				console.log('Failed AJAX Call :( /// Return Data: ' + data);
-			});
-			
-		});
 	}
 	function get_author(author){
 		jQuery.getJSON("https://api.semanticscholar.org/v1/author/"+author,function( data2 ) {
@@ -172,7 +171,7 @@ function create_radiology_publication() { ?>
 				
 				
 				if(pub.year == '2021'  || pub.year == '2020'){
-					
+					console.log(pub.paperId);
 					setTimeout(function() { get_paper_details(author, pub.paperId) }, i*5000);
 					i++;
 				}
